@@ -31,7 +31,7 @@ export const getAllSkills = async (req, res) => {
 
 export const getMySkills = async (req, res) => {
   try {
-    const mySkills = await Skill.find({ user: req.user.id });
+    const mySkills = await Skill.find({ userId: req.user.id });
     res.json(mySkills);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -42,23 +42,30 @@ export const deleteSkill = async (req, res) => {
   try {
     const skill = await Skill.findById(req.params.id);
 
-    if (!skill) return res.status(404).json({ message: 'Skill not found' });
-    if (skill.user.toString() !== req.user.id)
-      return res.status(403).json({ message: 'Unauthorized' });
+    if (!skill) {
+      return res.status(404).json({ message: 'Skill not found' });
+    }
 
-    await skill.remove();
+    if (skill.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await skill.deleteOne(); // or skill.remove() depending on your Mongoose version
+
     res.json({ message: 'Skill deleted' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Delete Skill Error:", err); // <-- This is the key line
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 
 export const updateSkill = async (req, res) => {
   try {
     const skill = await Skill.findById(req.params.id);
 
     if (!skill) return res.status(404).json({ message: 'Skill not found' });
-    if (skill.user.toString() !== req.user.id)
+    if (skill.userId.toString() !== req.user.id)
       return res.status(403).json({ message: 'Unauthorized' });
 
     const { skillName, description, category, type } = req.body;
